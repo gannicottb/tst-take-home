@@ -21,18 +21,6 @@ object Main {
     CabinPrice("CB", "S2", 270.00)
   )
 
-  def getBestGroupPrices(rates: Seq[Rate], prices: Seq[CabinPrice]): Seq[BestGroupPrice] = {
-    // For each cabin + rate group, what is the best (lowest) price?
-    val rateCodeToRateGroup = rates.map(r => r.rateCode -> r.rateGroup).toMap
-    prices
-      .groupBy(p => (p.cabinCode, rateCodeToRateGroup(p.rateCode)))
-      .toSeq
-      .map {
-        case ((_, rateGroup), prices) =>
-          prices.minBy(_.price).toBestGroupPrice(rateGroup)
-      }
-  }
-
   val expected = List(
     BestGroupPrice("CA", "M1", 200.00, "Military"),
     BestGroupPrice("CA", "S1", 225.00, "Senior"),
@@ -44,9 +32,9 @@ object Main {
     println(sampleRates)
     println(samplePrices)
     println("-" * 10)
-    val bestPrices = getBestGroupPrices(sampleRates, samplePrices).sortBy(x => (x.cabinCode, x.rateCode))
-    println(bestPrices)
-//    println(expected)
+    val bestPrices = BestPriceFinder.getBestGroupPrices(sampleRates, samplePrices)
+    println(bestPrices.sortBy(x => (x.cabinCode, x.rateCode)))
+    println(expected)
     if(bestPrices.toSet == expected.toSet) println("PASS")
     else println(s"FAIL: did not match ${expected.toSet}")
   }
