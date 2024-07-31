@@ -9,4 +9,8 @@ object Model {
   }
 
   case class BestGroupPrice(cabinCode: String, rateCode: String, price: BigDecimal, rateGroup: String)
+
+  case class Promotion(code: String, notCombinableWith: Seq[String])
+
+  case class PromotionCombo(promotionCodes: Seq[String])
 }
