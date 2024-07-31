@@ -35,7 +35,10 @@ object Solver {
     }.toSeq
 
   def combinablePromotions(promotionCode: String, allPromotions: Seq[Promotion]): Seq[PromotionCombo] = {
+    // Create a hash of code -> Set[NotCombinableCode] for efficient lookup
     val noCombineMap = allPromotions.map(p => p.code -> p.notCombinableWith.toSet).toMap
+    // Recursively build the largest possible valid combination of codes
+    // for a given starting point and set of possible codes
     @tailrec
     def findCombo(current: Set[String], possibles: Set[String]): Set[String] = {
       if (possibles.isEmpty) {
@@ -43,27 +46,25 @@ object Solver {
         current
       } else {
 //        println(s"findCombo: $current, $possibles")
+        // Add the next possible code and check validity
         val candidate = current + possibles.head
         val isValid   = !candidate.exists(c => noCombineMap(c).intersect(candidate).nonEmpty)
 //        println(s"findCombo: $candidate isValid? $isValid")
+        // recurse with the rest of the possible codes, adding the next code to current if it's valid
         findCombo(
           if (isValid) candidate else current,
           possibles.tail
         )
       }
     }
-
+    // For each slice of the possible codes, find the largest valid combinations
+    // (do not return duplicates or combinations that are subsets of larger combinations
     noCombineMap.keySet.tails.map(_.toSet).foldLeft(Set[Set[String]]()){
       case (combos, possibles) =>
+        // find the largest combo starting from our start code, comparing against codes we haven't already exhausted
         val combo = findCombo(Set(promotionCode), possibles -- combos.flatten)
+        // Combos of size 1 are not useful to us
         if(combo.size > 1) combos + combo else combos
     }.map(c => PromotionCombo(c.toSeq.sorted)).toSeq
-  }
-
-  def promotionComboIsValid(combo: PromotionCombo, notCombinableMap: Map[String, Seq[String]]): Boolean = {
-    val codeSet = combo.promotionCodes.toSet
-    // If there is any code in this combo that is incompatible with any other member of the combo, it's invalid
-    val invalid = codeSet.exists(c => notCombinableMap(c).toSet.intersect(codeSet).nonEmpty)
-    !invalid
   }
 }

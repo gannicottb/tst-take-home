@@ -35,32 +35,57 @@ object Main {
     Promotion("P4", Seq("P2")),
     Promotion("P5", Seq("P2")),
   )
-  val expectedAll = Set(
+  val expectedAll = List(
     PromotionCombo(Seq("P1", "P4", "P5")),
     PromotionCombo(Seq("P1", "P2")),
     PromotionCombo(Seq("P2", "P3")),
     PromotionCombo(Seq("P3", "P4", "P5"))
   )
+  val expectedP1 = List(
+    PromotionCombo(List("P1", "P2")), PromotionCombo(List("P1", "P4", "P5"))
+  )
+  val expectedP3 = List(
+    PromotionCombo(List("P3", "P2")), PromotionCombo(List("P3", "P4", "P5"))
+  )
+
+  def printAll(i: Any*) =
+    i.foreach(println)
 
   def main(args: Array[String]) = {
-    println(sampleRates)
-    println(samplePrices)
-    println("-" * 10)
-    val bestPrices = Solver.getBestGroupPrices(sampleRates, samplePrices)
-    println(bestPrices.sortBy(x => (x.cabinCode, x.rateCode)))
-    println(expected)
-    if(bestPrices.toSet == expected.toSet) println("PASS")
-    else println(s"FAIL: did not match ${expected.toSet}")
-    println("--promos--")
-    println(samplePromotions)
-    val allCombos = Solver.allCombinablePromotions(samplePromotions)
-    val combosForP1 = Solver.combinablePromotions("P1", samplePromotions)
-    val combosForP3 = Solver.combinablePromotions("P3", samplePromotions)
-    println(allCombos)
-    println(combosForP1)
-    println(combosForP3)
-    if (allCombos.toSet == expectedAll) println("PASS")
-    else println(s"FAIL: did not match ${expectedAll}")
-
+    val divider = "-" * 10
+    printAll(
+      "PROBLEM 1",
+      divider,
+      "INPUT - RATES",
+      sampleRates,
+      "INPUT - PRICES",
+      samplePrices,
+      divider,
+      "OUTPUT",
+      Solver.getBestGroupPrices(sampleRates, samplePrices).sortBy(x => (x.cabinCode, x.rateCode)),
+      "EXPECTED",
+      expected,
+    )
+    println(divider)
+    println(divider)
+    printAll(
+      "PROBLEM 2",
+      divider,
+      "INPUT - PROMOTIONS",
+      samplePromotions,
+      divider,
+      "OUTPUT (ALL)",
+      Solver.allCombinablePromotions(samplePromotions).sortBy(_.promotionCodes.size),
+      "EXPECTED",
+      expectedAll,
+      "OUTPUT (P1)",
+      Solver.combinablePromotions("P1", samplePromotions).sortBy(_.promotionCodes.size),
+      "EXPECTED",
+      expectedP1,
+      "OUTPUT (P3)",
+      Solver.combinablePromotions("P3", samplePromotions).sortBy(_.promotionCodes.size),
+      "EXPECTED",
+      expectedP3,
+    )
   }
 }
