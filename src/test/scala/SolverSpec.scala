@@ -51,7 +51,7 @@ class SolverSpec extends AnyWordSpec with Matchers {
       Promotion("P4", Seq("P2")),
       Promotion("P5", Seq("P2")),
     )
-    "find combos" in {
+    "find combos for given codes" in {
       val res = Solver.combinablePromotions("P1", promotions)
       val res2 = Solver.combinablePromotions("P2", promotions)
       val res3 = Solver.combinablePromotions("P3", promotions)
@@ -66,6 +66,24 @@ class SolverSpec extends AnyWordSpec with Matchers {
         PromotionCombo(Seq("P1", "P2")),
         PromotionCombo(Seq("P2", "P3")),
         PromotionCombo(Seq("P3", "P4", "P5"))
+      )
+    }
+    "find nothing if all combos are uncombinable" in {
+      val allCodes = Seq("P1", "P2", "P3", "P4", "P5")
+      val promotions = allCodes.map(c =>
+        Promotion(c, allCodes.filterNot(_ == c))
+      )
+      val res = Solver.allCombinablePromotions(promotions)
+      res.size shouldBe 0
+    }
+    "find one combo containing all codes if all codes are combinable" in {
+      val allCodes = Seq("P1", "P2", "P3", "P4", "P5")
+      val promotions = allCodes.map(c =>
+        Promotion(c, Seq())
+      )
+      val res = Solver.allCombinablePromotions(promotions)
+      res.map(_.promotionCodes.toSet) shouldBe Seq(
+        allCodes.toSet
       )
     }
   }

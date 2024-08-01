@@ -1,3 +1,3 @@
 # Run the demo
-
-In IntelliJ, run Main.
+1) Open in IntelliJ IDEA
+2) Run Main.
