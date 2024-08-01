@@ -24,49 +24,69 @@ object Solver {
           prices.minBy(_.price).toBestGroupPrice(rateGroup)
       }
   }
-  // Given a list of promotions that may not be combinable with others:
-  // find largest valid combinations for each code
-  def allCombinablePromotions(allPromotions: Seq[Promotion]): Seq[PromotionCombo] =
-    allPromotions.foldLeft(Set[PromotionCombo]()){
-      case (allCombos, promo) =>
-        val result = combinablePromotions(promo.code, allPromotions).toSet
-        allCombos ++ result.filter(combo =>
-          !allCombos.exists(existing => combo.promotionCodes.toSet.subsetOf(existing.promotionCodes.toSet))
-        )
-    }.toSeq
 
-  // Given a particular code and a list of promotions:
-  // Find the largest valid combinations of codes with the particular code
-  def combinablePromotions(promotionCode: String, allPromotions: Seq[Promotion]): Seq[PromotionCombo] = {
-    // Create a hash of code -> Set[NotCombinableCode] for efficient lookup
-    val noCombineMap = allPromotions.map(p => p.code -> p.notCombinableWith.toSet).toMap
+  trait ValidCombo {
+    def codes: Set[String]
+    def insert(code: String): ValidCombo
+    def toPromotionCombo: PromotionCombo =
+      PromotionCombo(codes.toSeq.sorted)
+  }
+  final class ValidComboImpl(noCombineMap: Map[String, Set[String]], combo: Set[String] = Set()) extends ValidCombo {
+    override def codes: Set[String] = combo
+    override def insert(code: String): ValidCombo = {
+      val candidate = combo + code
+      val isValid   = !candidate.exists(c => noCombineMap(c).intersect(candidate).nonEmpty)
+      new ValidComboImpl(noCombineMap, if (isValid) candidate else combo)
+    }
+  }
+
+  private def validComboSet(promotionCode: String, allPromotions: Seq[Promotion]): Set[ValidCombo] = {
     // Recursively build the largest possible valid combination of codes
     // for a given starting point and set of possible codes
     @tailrec
-    def findCombo(current: Set[String], possibles: Set[String]): Option[Set[String]] = {
-      if (possibles.isEmpty) {
-        // Ran out of codes to try, return current
-        // Combos of size 1 are not useful to us
-        if(current.size > 1) Some(current) else None
+    def findCombo(current: ValidCombo, possibles: Set[String]): Option[ValidCombo] =
+      possibles.headOption match {
+        // Ran out of codes to try, return current (if it has more than one code)
+        case None if current.codes.size > 1 => Some(current)
+        // There's another code to try, so recurse with that
+        case Some(nextPossible) =>
+          findCombo(
+            current.insert(nextPossible),
+            possibles.tail // could throw but won't because the set is nonEmpty by definition here
+          )
+        case _ => None
       }
-      else {
-        // Add the next possible code and check validity
-        val candidate = current + possibles.head
-        val isValid   = !candidate.exists(c => noCombineMap(c).intersect(candidate).nonEmpty)
-        // recurse with the rest of the possible codes, adding the next code to current if it's valid
-        findCombo(
-          if (isValid) candidate else current,
-          possibles.tail
-        )
-      }
-    }
+
+    // Create a hash of code -> Set[NotCombinableCode] for efficient lookup
+    val noCombineMap = allPromotions.map(p => p.code -> p.notCombinableWith.toSet).toMap
     // For each slice of the possible codes, find the largest valid combinations
-    // (do not return duplicates or combinations that are subsets of larger combinations
-    noCombineMap.keySet.tails.map(_.toSet).foldLeft(Set[Set[String]]()){
-      case (combos, possibles) =>
-        // find the largest combo starting from our start code, comparing against codes we haven't already exhausted
-        findCombo(Set(promotionCode), possibles -- combos.flatten)
-          .fold(combos)(combos + _)
-    }.map(c => PromotionCombo(c.toSeq.sorted)).toSeq
+    // (do not return duplicates or combinations that are subsets of larger combinations)
+    noCombineMap.keySet.tails
+      .map(_.toSet)
+      .foldLeft(Set[ValidCombo]()) {
+        case (combos, possibles) =>
+          // find the largest combo starting from our start code, comparing against codes we haven't already exhausted
+          findCombo(new ValidComboImpl(noCombineMap, Set(promotionCode)), possibles -- combos.flatMap(_.codes))
+            .fold(combos)(combos + _)
+      }
   }
+
+  def combinablePromotions(promotionCode: String, allPromotions: Seq[Promotion]): Seq[PromotionCombo] =
+    validComboSet(promotionCode, allPromotions)
+      .map(_.toPromotionCombo)
+      .toSeq
+
+  // Given a list of promotions that may not be combinable with others:
+  // find largest valid combinations for each code
+  def allCombinablePromotions(allPromotions: Seq[Promotion]): Seq[PromotionCombo] =
+    allPromotions
+      .foldLeft(Set[PromotionCombo]()) {
+        case (allCombos, promo) =>
+          allCombos ++ validComboSet(promo.code, allPromotions)
+            .filterNot(
+              combo => allCombos.exists(existing => combo.codes.subsetOf(existing.promotionCodes.toSet))
+            )
+            .map(_.toPromotionCombo)
+      }
+      .toSeq
 }

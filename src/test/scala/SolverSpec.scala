@@ -55,17 +55,17 @@ class SolverSpec extends AnyWordSpec with Matchers {
       val res = Solver.combinablePromotions("P1", promotions)
       val res2 = Solver.combinablePromotions("P2", promotions)
       val res3 = Solver.combinablePromotions("P3", promotions)
-      res.toSet shouldBe Set(PromotionCombo(List("P1", "P2")), PromotionCombo(List("P1", "P4", "P5")))
-      res2.toSet shouldBe Set(PromotionCombo(List("P1", "P2")), PromotionCombo(List("P2", "P3")))
-      res3.toSet shouldBe Set(PromotionCombo(List("P2", "P3")), PromotionCombo(List("P3", "P4", "P5")))
+      res.toSet shouldBe Set(PromotionCombo(Seq("P1", "P2")), PromotionCombo(Seq("P1", "P4", "P5")))
+      res2.toSet shouldBe Set(PromotionCombo(Seq("P1", "P2")), PromotionCombo(Seq("P2", "P3")))
+      res3.toSet shouldBe Set(PromotionCombo(Seq("P2", "P3")), PromotionCombo(Seq("P3", "P4", "P5")))
     }
     "find all combos" in {
       val res = Solver.allCombinablePromotions(promotions)
       res.toSet shouldBe Set(
         PromotionCombo(Seq("P1", "P4", "P5")),
-        PromotionCombo(List("P1", "P2")),
-        PromotionCombo(List("P2", "P3")),
-        PromotionCombo(List("P3", "P4", "P5"))
+        PromotionCombo(Seq("P1", "P2")),
+        PromotionCombo(Seq("P2", "P3")),
+        PromotionCombo(Seq("P3", "P4", "P5"))
       )
     }
   }
