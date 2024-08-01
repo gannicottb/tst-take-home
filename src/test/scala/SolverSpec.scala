@@ -41,32 +41,30 @@ class SolverSpec extends AnyWordSpec with Matchers {
           prices.last.toBestGroupPrice(devRate.rateGroup)
         )
       }
+      "it's the given use case" in {
+        val res = Solver.getBestGroupPrices(SampleInput.inputRates, SampleInput.inputPrices)
+        res.toSet shouldBe SampleInput.expected.toSet
+      }
     }
   }
   "PromotionComboSolver" should {
-    val promotions = Seq(
-      Promotion("P1", Seq("P3")),
-      Promotion("P2", Seq("P4", "P5")),
-      Promotion("P3", Seq("P1")),
-      Promotion("P4", Seq("P2")),
-      Promotion("P5", Seq("P2")),
-    )
+    def shouldBeEquivalent(l: Seq[PromotionCombo], r: Seq[PromotionCombo]) = {
+      def toSetOfSets(s: Seq[PromotionCombo]) = s.map(_.promotionCodes.toSet).toSet
+       toSetOfSets(l) shouldBe toSetOfSets(r)
+    }
+
+    val promotions = SampleInput.inputPromotions
     "find combos for given codes" in {
       val res = Solver.combinablePromotions("P1", promotions)
       val res2 = Solver.combinablePromotions("P2", promotions)
       val res3 = Solver.combinablePromotions("P3", promotions)
-      res.toSet shouldBe Set(PromotionCombo(Seq("P1", "P2")), PromotionCombo(Seq("P1", "P4", "P5")))
-      res2.toSet shouldBe Set(PromotionCombo(Seq("P1", "P2")), PromotionCombo(Seq("P2", "P3")))
-      res3.toSet shouldBe Set(PromotionCombo(Seq("P2", "P3")), PromotionCombo(Seq("P3", "P4", "P5")))
+      shouldBeEquivalent(res, SampleInput.expectedP1)
+      shouldBeEquivalent(res2, Seq(PromotionCombo(Seq("P1", "P2")), PromotionCombo(Seq("P2", "P3"))))
+      shouldBeEquivalent(res3, SampleInput.expectedP3)
     }
     "find all combos" in {
       val res = Solver.allCombinablePromotions(promotions)
-      res.toSet shouldBe Set(
-        PromotionCombo(Seq("P1", "P4", "P5")),
-        PromotionCombo(Seq("P1", "P2")),
-        PromotionCombo(Seq("P2", "P3")),
-        PromotionCombo(Seq("P3", "P4", "P5"))
-      )
+      shouldBeEquivalent(res, SampleInput.expectedAll)
     }
     "find nothing if all combos are uncombinable" in {
       val allCodes = Seq("P1", "P2", "P3", "P4", "P5")
@@ -82,9 +80,7 @@ class SolverSpec extends AnyWordSpec with Matchers {
         Promotion(c, Seq())
       )
       val res = Solver.allCombinablePromotions(promotions)
-      res.map(_.promotionCodes.toSet) shouldBe Seq(
-        allCodes.toSet
-      )
+      shouldBeEquivalent(res, Seq(PromotionCombo(allCodes)))
     }
   }
 }
